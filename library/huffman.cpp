@@ -74,8 +74,6 @@ namespace huffman {
     }
 
     void write_encoded(const tree_ptr_t &tr, size_t count, std::istream &input, std::ostream &output) {
-        std::bitset<8> buffer;
-        size_t in_buffer = 0;
         std::unordered_map<unsigned char, std::vector<bool>> mp;
         std::vector<bool> cur;
         std::vector<bool> tree_structure;
@@ -92,28 +90,17 @@ namespace huffman {
 
         output.write(reinterpret_cast<const char*>(&count), 4);
 
+        obitstream stream(output);
         for (size_t i = 0; i < count; i++) {
             unsigned char ch;
             input >> std::noskipws >> ch;
-            size_t ptr = 0;
-            while (ptr != mp[ch].size()) {
-                buffer[8 - in_buffer - 1] = mp[ch][ptr];
-                in_buffer++;
 
-                if (in_buffer == 8) {
-                    auto tmp = buffer.to_ulong();
-                    output.write(reinterpret_cast<const char *>(&tmp), 1);
-                    in_buffer = 0;
-                    buffer.reset();
-                }
-                ptr++;
+            for (auto bit : mp[ch]) {
+                stream << bit;
             }
         }
 
-        if (in_buffer > 0) {
-            auto tmp = buffer.to_ulong();
-            output.write(reinterpret_cast<const char *>(&tmp), 1);
-        }
+        stream.flush();
     }
 
     tree read_tree(std::istream& input) {
@@ -164,20 +151,19 @@ namespace huffman {
         size_t count = 0;
         input.read(reinterpret_cast<char*>(&count), 4);
 
-        unsigned char ch;
-        while (count > 0 && input >> std::noskipws >> ch) {
-            for (size_t i = 0; i < 8 && count > 0; i++) {
-                if ((ch >> (8 - i - 1)) & 1) {
-                    node = node->right;
-                } else {
-                    node = node->left;
-                }
+        ibitstream stream(input);
+        bool bit;
+        while (count > 0 && stream >> bit) {
+            if (bit) {
+                node = node->right;
+            } else {
+                node = node->left;
+            }
 
-                if (node->left == nullptr) {
-                    output << node->ch;
-                    node = tr;
-                    count--;
-                }
+            if (node->left == nullptr) {
+                output << node->ch;
+                node = tr;
+                count--;
             }
         }
     }
