@@ -3,6 +3,7 @@
 //
 
 #include "huffman.h"
+#include "bitstream.h"
 
 #include <vector>
 #include <algorithm>
@@ -64,25 +65,12 @@ namespace huffman {
     }
 
     void write_vector(const std::vector<bool>& vec, std::ostream& output) {
-        std::bitset<8> buffer;
-        size_t in_buffer = 0;
+        obitstream stream(output);
 
         for (bool bit : vec) {
-            buffer[8 - in_buffer - 1] = bit;
-            in_buffer++;
-
-            if (in_buffer == 8) {
-                auto tmp = buffer.to_ulong();
-                output.write(reinterpret_cast<const char *>(&tmp), 1);
-                in_buffer = 0;
-                buffer.reset();
-            }
+            stream << bit;
         }
-
-        if (in_buffer > 0) {
-            auto tmp = buffer.to_ulong();
-            output.write(reinterpret_cast<const char *>(&tmp), 1);
-        }
+        stream.flush();
     }
 
     void write_encoded(const tree_ptr_t &tr, size_t count, std::istream &input, std::ostream &output) {
@@ -133,16 +121,18 @@ namespace huffman {
 
         input.read(reinterpret_cast<char*>(&sz), 4);
         std::vector<unsigned char> alphabet(sz);
-        std::vector<unsigned char> tree_structure((4 * sz - 3 + 7) / 8);
 
         input.read(reinterpret_cast<char*>(alphabet.data()), sz);
-        input.read(reinterpret_cast<char*>(tree_structure.data()), (4 * sz - 3 + 7) / 8);
 
         std::stack<tree_ptr_t> stack;
         stack.push(std::make_shared<tree>());
         size_t ptr = 0;
-        for (size_t i = 0; i < tree_structure.size() * 8; i++) {
-            if ((tree_structure[i / 8] >> (8 - (i % 8) - 1)) & 1) {
+        ibitstream stream(input);
+        for (size_t i = 0; i < (4 * sz - 3 + 7) / 8 * 8; i++) {
+            bool b;
+            stream >> b;
+
+            if (b) {
                 stack.push(std::make_shared<tree>());
             } else {
                 if (stack.top()->left == nullptr) {
