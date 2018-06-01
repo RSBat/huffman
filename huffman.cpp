@@ -15,16 +15,15 @@
 
 namespace huffman {
 
-    typedef std::shared_ptr<tree> tree_ptr;
+    typedef std::shared_ptr<tree> tree_ptr_t;
 
-    tree build_tree(const std::vector<size_t> &counts, const std::vector<unsigned char> &chars) {
-        std::vector<std::pair<size_t, tree_ptr>> arr;
+    tree_ptr_t build_tree(const std::vector<size_t> &counts, const std::vector<unsigned char> &chars) {
+        std::vector<std::pair<size_t, tree_ptr_t>> arr;
         std::transform(counts.begin(), counts.end(), chars.begin(), std::back_inserter(arr),
-                       [](size_t cnt, unsigned char ch) -> std::pair<size_t, tree_ptr> { return {cnt,
+                       [](size_t cnt, unsigned char ch) -> std::pair<size_t, tree_ptr_t> { return {cnt,
                                                                                            std::make_shared<tree>(
                                                                                                    ch)};
                        });
-        //std::transform(counts.begin(), counts.end(), chars.begin(), std::back_inserter(arr), std::make_pair<size_t, uint8_t>);
         std::sort(arr.begin(), arr.end(), std::greater<>());
 
         while (arr.size() < 2) {
@@ -42,10 +41,10 @@ namespace huffman {
             std::sort(arr.begin(), arr.end(), std::greater<>());
         }
 
-        return *arr[0].second;
+        return arr[0].second;
     }
 
-    void output_dfs(const tree_ptr &v, std::vector<bool>& structure, std::vector<unsigned char>& chars,
+    void output_dfs(const tree_ptr_t &v, std::vector<bool>& structure, std::vector<unsigned char>& chars,
                     std::unordered_map<unsigned char, std::vector<bool>>& mp, std::vector<bool>& cur) {
         if (v->left != nullptr) {
             structure.push_back(true);
@@ -68,8 +67,8 @@ namespace huffman {
         std::bitset<8> buffer;
         size_t in_buffer = 0;
 
-        for (size_t i = 0; i < vec.size(); i++) {
-            buffer[8 - in_buffer - 1] = vec[i];
+        for (bool bit : vec) {
+            buffer[8 - in_buffer - 1] = bit;
             in_buffer++;
 
             if (in_buffer == 8) {
@@ -86,7 +85,7 @@ namespace huffman {
         }
     }
 
-    void write_encoded(const tree_ptr &tr, size_t count, std::istream &input, std::ostream &output) {
+    void write_encoded(const tree_ptr_t &tr, size_t count, std::istream &input, std::ostream &output) {
         std::bitset<8> buffer;
         size_t in_buffer = 0;
         std::unordered_map<unsigned char, std::vector<bool>> mp;
@@ -139,7 +138,7 @@ namespace huffman {
         input.read(reinterpret_cast<char*>(alphabet.data()), sz);
         input.read(reinterpret_cast<char*>(tree_structure.data()), (4 * sz - 3 + 7) / 8);
 
-        std::stack<tree_ptr> stack;
+        std::stack<tree_ptr_t> stack;
         stack.push(std::make_shared<tree>());
         size_t ptr = 0;
         for (size_t i = 0; i < tree_structure.size() * 8; i++) {
@@ -150,7 +149,7 @@ namespace huffman {
                     stack.top()->ch = alphabet[ptr];
                     ptr++;
                 }
-                tree_ptr tmp = stack.top();
+                tree_ptr_t tmp = stack.top();
                 stack.pop();
 
                 if (stack.empty()) {
@@ -169,8 +168,8 @@ namespace huffman {
     }
 
     void read_encoded(std::istream &input, std::ostream &output) {
-        tree_ptr tr = std::make_shared<tree>(read_tree(input));
-        tree_ptr node = tr;
+        tree_ptr_t tr = std::make_shared<tree>(read_tree(input));
+        tree_ptr_t node = tr;
 
         size_t count = 0;
         input.read(reinterpret_cast<char*>(&count), 4);
