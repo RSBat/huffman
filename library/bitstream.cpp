@@ -6,11 +6,11 @@
 
 namespace huffman {
 
-    bitsream_base::operator bool() const {
+    bitstream_base::operator bool() const {
         return !fail();
     }
 
-    bool bitsream_base::fail() const {
+    bool bitstream_base::fail() const {
         return !state;
     }
 

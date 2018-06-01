@@ -10,9 +10,9 @@
 
 namespace huffman {
 
-    class bitsream_base {
+    class bitstream_base {
     public:
-        bitsream_base() : state(true), buffer(0), in_buffer(0) {};
+        bitstream_base() : state(true), buffer(0), in_buffer(0) {};
         explicit operator bool() const;
         bool fail() const;
 
@@ -24,7 +24,7 @@ namespace huffman {
         size_t in_buffer;
     };
 
-    class ibitstream : public bitsream_base {
+    class ibitstream : public bitstream_base {
     public:
         explicit ibitstream(std::istream& input) :input(input) {};
         ibitstream& operator>>(bool&);
@@ -33,7 +33,7 @@ namespace huffman {
         std::istream& input;
     };
 
-    class obitstream : public bitsream_base {
+    class obitstream : public bitstream_base {
     public:
         explicit obitstream(std::ostream& output) :output(output) {};
         obitstream& operator<<(bool);
