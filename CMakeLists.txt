@@ -15,6 +15,8 @@ add_executable(huffman_testing
         tests/huffman_testing.cpp
         library/huffman.h
         library/huffman.cpp
+        library/bitstream.h
+        library/bitstream.cpp
         gtest/gtest-all.cc
         gtest/gtest.h
         gtest/gtest_main.cc )
