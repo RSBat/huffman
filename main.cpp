@@ -29,15 +29,13 @@ int main(int argc, char* argv[]) {
             cnt++;
         }
 
-        std::vector<unsigned char> chars;
-        for (unsigned char c = 0; c != 255; c++) {
-            if (counts[c] != 0) { chars.push_back(c); }
-        }
-        if (counts[255]) { chars.push_back(static_cast<unsigned char &&>(255)); }
+        std::vector<std::pair<size_t, unsigned char>> chars;
+        ch = 0;
+        do {
+            if (counts[ch] != 0) { chars.emplace_back(counts[ch], ch); }
+        } while (++ch != 0);
 
-        counts.erase(std::remove(counts.begin(), counts.end(), 0), counts.end());
-
-        std::shared_ptr<huffman::tree> tree = huffman::build_tree(counts, chars);
+        std::shared_ptr<huffman::tree> tree = huffman::build_tree(chars);
 
         input.clear();
         input.seekg(0);

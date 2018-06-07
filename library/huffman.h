@@ -25,7 +25,7 @@ namespace huffman {
                 : left(std::move(lhs)), right(std::move(rhs)), ch(0) {};
     };
 
-    std::shared_ptr<tree> build_tree(const std::vector<size_t> &counts, const std::vector<unsigned char> &chars);
+    std::shared_ptr<tree> build_tree(const std::vector<std::pair<size_t, unsigned char>>& counts);
 
     void write_encoded(const std::shared_ptr<tree>&, size_t count, std::istream& input, std::ostream& output);
 

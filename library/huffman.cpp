@@ -19,31 +19,60 @@ namespace huffman {
     typedef std::shared_ptr<tree> tree_ptr_t;
     typedef std::unordered_map<unsigned char, std::vector<bool>> alphabet_map;
 
-    tree_ptr_t build_tree(const std::vector<size_t> &counts, const std::vector<unsigned char> &chars) {
+    tree_ptr_t build_tree(const std::vector<std::pair<size_t, unsigned char>> &counts) {
         std::vector<std::pair<size_t, tree_ptr_t>> arr;
-        std::transform(counts.begin(), counts.end(), chars.begin(), std::back_inserter(arr),
-                       [](size_t cnt, unsigned char ch) -> std::pair<size_t, tree_ptr_t> { return {cnt,
-                                                                                           std::make_shared<tree>(
-                                                                                                   ch)};
+        std::transform(counts.begin(), counts.end(), std::back_inserter(arr),
+                       [](std::pair<size_t, unsigned char> p) -> std::pair<size_t, tree_ptr_t> {
+                           return {p.first, std::make_shared<tree>(p.second)};
                        });
-        std::sort(arr.begin(), arr.end(), std::greater<>());
 
         while (arr.size() < 2) {
             arr.emplace_back(0, std::make_shared<tree>());
         }
 
-        // TODO optimize
-        while (arr.size() > 1) {
-            auto lhs = arr.back();
-            arr.pop_back();
-            auto rhs = arr.back();
-            arr.pop_back();
+        std::sort(arr.begin(), arr.end());
+        std::vector<std::pair<size_t, tree_ptr_t>> aux;
 
-            arr.emplace_back(lhs.first + rhs.first, std::make_shared<tree>(lhs.second, rhs.second, 0));
-            std::sort(arr.begin(), arr.end(), std::greater<>());
+        size_t i = 0;
+        size_t j = 0;
+
+        while (arr.size() + aux.size() > 1 + i + j) {
+            std::pair<size_t, tree_ptr_t> lhs;
+            std::pair<size_t, tree_ptr_t> rhs;
+
+            if (i == arr.size()) {
+                lhs = aux[j];
+                j++;
+            } else if (j == aux.size()) {
+                lhs = arr[i];
+                i++;
+            } else if (arr[i].first < aux[j].first) {
+                lhs = arr[i];
+                i++;
+            } else {
+                lhs = aux[j];
+                j++;
+            }
+
+            if (i == arr.size()) {
+                rhs = aux[j];
+                j++;
+            } else if (j == aux.size()) {
+                rhs = arr[i];
+                i++;
+            } else if (arr[i].first < aux[j].first) {
+                rhs = arr[i];
+                i++;
+            } else {
+                rhs = aux[j];
+                j++;
+            }
+
+
+            aux.emplace_back(lhs.first + rhs.first, std::make_shared<tree>(lhs.second, rhs.second, 0));
         }
 
-        return arr[0].second;
+        return aux.back().second;
     }
 
     void tree_to_map(const tree_ptr_t& v, alphabet_map& mp, std::vector<bool>& cur) {
