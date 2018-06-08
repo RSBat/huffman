@@ -2,7 +2,7 @@
 // Created by rsbat on 6/6/18.
 //
 
-#include "library/huffman.h"
+#include <library/huffman.h>
 
 #include <gtest/gtest.h>
 
@@ -85,5 +85,51 @@ TEST(encode_decode, random) {
         }
 
         ASSERT_EQ(test, run_encode_decode(test));
+    }
+}
+
+TEST(decode_corrupted, empty) {
+    std::istringstream iencoded("");
+    std::ostringstream decoded;
+
+    ASSERT_ANY_THROW(huffman::read_encoded(iencoded, decoded));
+}
+
+TEST(decode_corrupted, tree_truncated) {
+    auto counts = calc_count("abacaba");
+    std::ostringstream oencoded;
+
+    huffman::obitstream stream(oencoded);
+    huffman::write_tree(stream, huffman::build_tree(counts));
+
+    std::string sencoded = oencoded.str();
+    for (size_t i = 0; i + 1 < sencoded.length(); i++) {
+        std::istringstream iencoded(sencoded.substr(0, i));
+        std::ostringstream decoded;
+
+        ASSERT_THROW(huffman::read_encoded(iencoded, decoded), huffman::corrupted_tree);
+    }
+}
+
+TEST(decode_corrupted, random_truncated) {
+    for (size_t i = 0; i < 100; i++) {
+        std::string test;
+        for (size_t j = 0; j < 1000; j++) {
+            test.push_back(static_cast<char>(rand() % 255));
+        }
+
+        std::istringstream istream(test);
+        std::ostringstream oencoded;
+
+        auto tree = huffman::build_tree(calc_count(test));
+        huffman::write_encoded(tree, test.length(), istream, oencoded);
+
+        std::string sencoded = oencoded.str();
+        size_t pos = rand() % sencoded.length();
+
+        std::istringstream iencoded(sencoded.substr(0, pos));
+        std::ostringstream decoded;
+
+        ASSERT_ANY_THROW(huffman::read_encoded(iencoded, decoded));
     }
 }

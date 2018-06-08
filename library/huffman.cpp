@@ -168,6 +168,10 @@ namespace huffman {
         uint32_t sz;
 
         input >> sz;
+        if (!input) {
+            throw corrupted_tree();
+        }
+
         std::vector<unsigned char> alphabet(sz);
 
         for (uint32_t i = 0; i < sz; i++) {
@@ -205,6 +209,10 @@ namespace huffman {
             --i;
         }
 
+        if (i != 0 || !input) {
+            throw corrupted_tree();
+        }
+
         return *stack.top();
     }
 
@@ -212,7 +220,7 @@ namespace huffman {
         tree_ptr_t node = tree;
 
         bool bit;
-        while (count > 0 && input >> bit) {
+        while (count != 0 && input >> bit) {
             if (bit) {
                 node = node->right;
             } else {
@@ -225,6 +233,10 @@ namespace huffman {
                 count--;
             }
         }
+
+        if (count != 0 || !input) {
+            throw corrupted_data();
+        }
     }
 
     void read_encoded(ibitstream& input, std::ostream& output) {
@@ -232,6 +244,10 @@ namespace huffman {
 
         uint64_t count = 0;
         input >> count;
+
+        if (!input) {
+            throw corrupted_data();
+        }
 
         read_symbols(input, output, count, tr);
     }

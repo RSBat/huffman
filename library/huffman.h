@@ -28,6 +28,9 @@ namespace huffman {
                 : left(lhs), right(rhs), ch(0) {};
     };
 
+    struct corrupted_tree {};
+    struct corrupted_data {};
+
     std::shared_ptr<tree> build_tree(const std::vector<std::pair<size_t, unsigned char>>& counts);
 
     std::unordered_map<unsigned char, std::vector<bool>> tree_to_map(const std::shared_ptr<tree>& tree);
