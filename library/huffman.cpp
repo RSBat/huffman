@@ -74,13 +74,13 @@ namespace huffman {
         return aux.back().second;
     }
 
-    void tree_to_map(const tree_ptr_t& v, alphabet_map& mp, std::vector<bool>& cur) {
+    void tree_to_map_dfs(const tree_ptr_t& v, alphabet_map& mp, std::vector<bool>& cur) {
         if (v->left != nullptr) {
             cur.push_back(false);
-            tree_to_map(v->left, mp, cur);
+            tree_to_map_dfs(v->left, mp, cur);
 
             cur.back() = true;
-            tree_to_map(v->right, mp, cur);
+            tree_to_map_dfs(v->right, mp, cur);
 
             cur.pop_back();
         } else {
@@ -88,15 +88,16 @@ namespace huffman {
         }
     }
 
-    void tree_to_map(const tree_ptr_t& v, alphabet_map& mp) {
+    alphabet_map tree_to_map(const tree_ptr_t& v) {
+        alphabet_map mp;
         std::vector<bool> cur;
-        tree_to_map(v, mp, cur);
+        tree_to_map_dfs(v, mp, cur);
+        return mp;
     }
 
     // encodes and writes count symbols from input to output
     void write_symbols(std::istream& input, obitstream& output, uint64_t count, const tree_ptr_t& tree) {
-        alphabet_map mp;
-        tree_to_map(tree, mp);
+        alphabet_map mp = tree_to_map(tree);
 
         for (size_t i = 0; i < count; i++) {
             unsigned char ch;
@@ -177,9 +178,9 @@ namespace huffman {
         stack.push(std::make_shared<tree>());
         size_t ptr = 0;
 
-        size_t i = 0;
+        size_t i = (4 * sz - 3 + 7) / 8 * 8;
         bool bit;
-        while (i < (4 * sz - 3 + 7) / 8 * 8 && input >> bit) {
+        while (i != 0 && input >> bit) {
             if (bit) {
                 stack.push(std::make_shared<tree>());
             } else {
@@ -201,7 +202,7 @@ namespace huffman {
                 }
             }
 
-            ++i;
+            --i;
         }
 
         return *stack.top();
