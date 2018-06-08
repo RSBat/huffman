@@ -9,7 +9,6 @@
 #include <algorithm>
 #include <functional>
 #include <utility>
-#include <bitset>
 #include <unordered_map>
 #include <cassert>
 #include <stack>
@@ -95,21 +94,20 @@ namespace huffman {
     }
 
     // encodes and writes count symbols from input to output
-    void write_symbols(std::istream& input, std::ostream& output, uint64_t count, const tree_ptr_t& tree) {
+    void write_symbols(std::istream& input, obitstream& output, uint64_t count, const tree_ptr_t& tree) {
         alphabet_map mp;
         tree_to_map(tree, mp);
 
-        obitstream stream(output);
         for (size_t i = 0; i < count; i++) {
             unsigned char ch;
             input >> std::noskipws >> ch;
 
             for (auto bit : mp[ch]) {
-                stream << bit;
+                output << bit;
             }
         }
 
-        stream.flush();
+        output.flush();
     }
 
     void output_dfs(const tree_ptr_t& v, std::vector<bool>& structure, std::vector<unsigned char>& chars, std::vector<bool>& cur) {
@@ -129,7 +127,7 @@ namespace huffman {
         structure.push_back(false);
     }
 
-    void write_tree(std::ostream& output, const tree_ptr_t& tree) {
+    void write_tree(obitstream& output, const tree_ptr_t& tree) {
         std::vector<bool> cur;
         std::vector<bool> tree_structure;
         std::vector<unsigned char> alphabet;
@@ -139,8 +137,11 @@ namespace huffman {
 
         assert(tree_structure.size() == 4 * alphabet.size() - 3);
 
-        output.write(reinterpret_cast<const char*>(&sz), 4); // write alphabet size
-        output.write(reinterpret_cast<const char*>(alphabet.data()), sz); // write alphabet in dfs order
+        // write alphabet size and alphabet in dfs order
+        output << sz;
+        for (auto ch : alphabet) {
+            output << ch;
+        }
 
         obitstream stream(output);
         for (auto bit: tree_structure) {
@@ -149,31 +150,37 @@ namespace huffman {
         stream.flush();
     }
 
-    void write_encoded(const tree_ptr_t &tree, uint64_t count, std::istream &input, std::ostream &output) {
+    void write_encoded(const tree_ptr_t &tree, uint64_t count, std::istream &input, obitstream &output) {
         write_tree(output, tree);
 
-        output.write(reinterpret_cast<const char*>(&count), sizeof(uint64_t));
+        output << count;
 
         write_symbols(input, output, count, tree);
     }
 
-    tree read_tree(std::istream& input) {
+    void write_encoded(const tree_ptr_t &tree, uint64_t count, std::istream &input, std::ostream &output) {
+        obitstream stream(output);
+        write_encoded(tree, count, input, stream);
+    }
+
+    tree read_tree(ibitstream& input) {
         uint32_t sz;
 
-        input.read(reinterpret_cast<char*>(&sz), 4);
+        input >> sz;
         std::vector<unsigned char> alphabet(sz);
 
-        input.read(reinterpret_cast<char*>(alphabet.data()), sz);
+        for (uint32_t i = 0; i < sz; i++) {
+            input >> alphabet[i];
+        }
 
         std::stack<tree_ptr_t> stack;
         stack.push(std::make_shared<tree>());
         size_t ptr = 0;
-        ibitstream stream(input);
-        for (size_t i = 0; i < (4 * sz - 3 + 7) / 8 * 8; i++) {
-            bool b;
-            stream >> b;
 
-            if (b) {
+        size_t i = 0;
+        bool bit;
+        while (i < (4 * sz - 3 + 7) / 8 * 8 && input >> bit) {
+            if (bit) {
                 stack.push(std::make_shared<tree>());
             } else {
                 if (stack.top()->left == nullptr) {
@@ -193,17 +200,18 @@ namespace huffman {
                     }
                 }
             }
+
+            ++i;
         }
 
         return *stack.top();
     }
 
-    void read_symbols(std::istream& input, std::ostream& output, uint64_t count, const tree_ptr_t& tree) {
+    void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const tree_ptr_t& tree) {
         tree_ptr_t node = tree;
 
-        ibitstream stream(input);
         bool bit;
-        while (count > 0 && stream >> bit) {
+        while (count > 0 && input >> bit) {
             if (bit) {
                 node = node->right;
             } else {
@@ -218,12 +226,18 @@ namespace huffman {
         }
     }
 
-    void read_encoded(std::istream& input, std::ostream& output) {
+    void read_encoded(ibitstream& input, std::ostream& output) {
         tree_ptr_t tr = std::make_shared<tree>(read_tree(input));
 
         uint64_t count = 0;
-        input.read(reinterpret_cast<char*>(&count), sizeof(uint64_t));
+        input >> count;
 
         read_symbols(input, output, count, tr);
+    }
+
+    void read_encoded(std::istream& input, std::ostream& output) {
+        ibitstream stream(input);
+
+        read_encoded(stream, output);
     }
 }

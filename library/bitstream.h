@@ -7,6 +7,7 @@
 
 #include <bitset>
 #include <istream>
+#include <climits>
 
 namespace huffman {
 
@@ -28,6 +29,9 @@ namespace huffman {
     public:
         explicit ibitstream(std::istream& input) :input(input) {};
         ibitstream& operator>>(bool&);
+        ibitstream& operator>>(uint32_t&);
+        ibitstream& operator>>(uint64_t&);
+        ibitstream& operator>>(unsigned char&);
 
     private:
         std::istream& input;
@@ -37,10 +41,13 @@ namespace huffman {
     public:
         explicit obitstream(std::ostream& output) :output(output) {};
         obitstream& operator<<(bool);
+        obitstream& operator<<(uint32_t);
+        obitstream& operator<<(uint64_t);
+        obitstream& operator<<(unsigned char);
         void flush();
 
     private:
-        static const size_t BUFFER_SIZE = 8;
+        static const size_t BUFFER_SIZE = CHAR_BIT;
 
         std::ostream& output;
     };
