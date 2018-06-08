@@ -7,14 +7,6 @@
 
 namespace huffman {
 
-    bitstream_base::operator bool() const {
-        return !fail();
-    }
-
-    bool bitstream_base::fail() const {
-        return !state;
-    }
-
     ibitstream& ibitstream::operator>>(bool& val) {
         if (in_buffer == 0) {
             uint8_t tmp;
@@ -53,6 +45,10 @@ namespace huffman {
         input.read(reinterpret_cast<char*>(&val), 1);
 
         return *this;
+    }
+
+    ibitstream::operator bool() const {
+        return static_cast<bool>(input);
     }
 
     obitstream& obitstream::operator<<(bool val) {

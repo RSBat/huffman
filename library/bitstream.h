@@ -13,14 +13,11 @@ namespace huffman {
 
     class bitstream_base {
     public:
-        bitstream_base() : state(true), buffer(0), in_buffer(0) {};
-        explicit operator bool() const;
-        bool fail() const;
+        bitstream_base() : buffer(0), in_buffer(0) {};
 
     protected:
         static const size_t BUFFER_SIZE = 8;
 
-        bool state;
         std::bitset<BUFFER_SIZE> buffer;
         size_t in_buffer;
     };
@@ -32,6 +29,7 @@ namespace huffman {
         ibitstream& operator>>(uint32_t&);
         ibitstream& operator>>(uint64_t&);
         ibitstream& operator>>(unsigned char&);
+        explicit operator bool() const;
 
     private:
         std::istream& input;

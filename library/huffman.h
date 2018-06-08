@@ -42,7 +42,7 @@ namespace huffman {
 
     tree read_tree(ibitstream& input);
 
-    void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const std::shared_ptr& tree);
+    void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const std::shared_ptr<tree>& tree);
 
     void read_encoded(std::istream& input, std::ostream& output);
 
