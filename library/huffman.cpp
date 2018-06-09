@@ -2,31 +2,31 @@
 // Created by rsbat on 5/31/18.
 //
 
-#include "huffman.h"
 #include "bitstream.h"
+#include "huffman.h"
 
-#include <vector>
 #include <algorithm>
-#include <functional>
-#include <utility>
-#include <unordered_map>
 #include <cassert>
+#include <functional>
 #include <stack>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace huffman {
 
-    typedef std::shared_ptr<tree> tree_ptr_t;
-    typedef std::unordered_map<unsigned char, std::vector<bool>> alphabet_map;
+    typedef std::shared_ptr<tree_node> tree_ptr_t;
+    typedef std::unordered_map<unsigned char, code_sequence> alphabet_map;
 
     tree_ptr_t build_tree(const std::vector<std::pair<size_t, unsigned char>> &counts) {
         std::vector<std::pair<size_t, tree_ptr_t>> arr;
         std::transform(counts.begin(), counts.end(), std::back_inserter(arr),
                        [](std::pair<size_t, unsigned char> p) -> std::pair<size_t, tree_ptr_t> {
-                           return {p.first, std::make_shared<tree>(p.second)};
+                           return {p.first, std::make_shared<tree_node>(p.second)};
                        });
 
         while (arr.size() < 2) {
-            arr.emplace_back(0, std::make_shared<tree>());
+            arr.emplace_back(0, std::make_shared<tree_node>());
         }
 
         std::sort(arr.begin(), arr.end());
@@ -68,7 +68,7 @@ namespace huffman {
             }
 
 
-            aux.emplace_back(lhs.first + rhs.first, std::make_shared<tree>(lhs.second, rhs.second, 0));
+            aux.emplace_back(lhs.first + rhs.first, std::make_shared<tree_node>(lhs.second, rhs.second, 0));
         }
 
         return aux.back().second;
@@ -84,7 +84,7 @@ namespace huffman {
 
             cur.pop_back();
         } else {
-            mp[v->ch] = cur;
+            mp[v->ch] = code_sequence(cur);
         }
     }
 
@@ -103,8 +103,11 @@ namespace huffman {
             unsigned char ch;
             input >> std::noskipws >> ch;
 
-            for (auto bit : mp[ch]) {
-                output << bit;
+            for (auto byte : mp[ch].seq) {
+                output << byte;
+            }
+            for (size_t j = 0; j < mp[ch].in_last; j++) {
+                output << mp[ch].last[CHAR_BIT - 1 - j];
             }
         }
 
@@ -134,7 +137,7 @@ namespace huffman {
         std::vector<unsigned char> alphabet;
 
         output_dfs(tree, tree_structure, alphabet, cur);
-        uint32_t sz = static_cast<uint32_t>(alphabet.size());
+        auto sz = static_cast<uint32_t>(alphabet.size());
 
         assert(tree_structure.size() == 4 * alphabet.size() - 3);
 
@@ -164,7 +167,7 @@ namespace huffman {
         write_encoded(tree, count, input, stream);
     }
 
-    tree read_tree(ibitstream& input) {
+    tree_node read_tree(ibitstream& input) {
         uint32_t sz;
 
         input >> sz;
@@ -179,14 +182,14 @@ namespace huffman {
         }
 
         std::stack<tree_ptr_t> stack;
-        stack.push(std::make_shared<tree>());
+        stack.push(std::make_shared<tree_node>());
         size_t ptr = 0;
 
         size_t i = (4 * sz - 3 + 7) / 8 * 8;
         bool bit;
         while (i != 0 && input >> bit) {
             if (bit) {
-                stack.push(std::make_shared<tree>());
+                stack.push(std::make_shared<tree_node>());
             } else {
                 if (stack.top()->left == nullptr) {
                     stack.top()->ch = alphabet[ptr];
@@ -209,7 +212,7 @@ namespace huffman {
             --i;
         }
 
-        if (i != 0 || !input) {
+        if (!input) {
             throw corrupted_tree();
         }
 
@@ -217,30 +220,31 @@ namespace huffman {
     }
 
     void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const tree_ptr_t& tree) {
-        tree_ptr_t node = tree;
+        std::weak_ptr<tree_node> node = tree;
 
         bool bit;
-        while (count != 0 && input >> bit) {
+        while (count != 0) {
+            input >> bit;
             if (bit) {
-                node = node->right;
+                node = node.lock()->right;
             } else {
-                node = node->left;
+                node = node.lock()->left;
             }
 
-            if (node->left == nullptr) {
-                output << node->ch;
+            if (node.lock()->left == nullptr) {
+                output << node.lock()->ch;
                 node = tree;
                 count--;
             }
         }
 
-        if (count != 0 || !input) {
+        if (!input) {
             throw corrupted_data();
         }
     }
 
     void read_encoded(ibitstream& input, std::ostream& output) {
-        tree_ptr_t tr = std::make_shared<tree>(read_tree(input));
+        tree_ptr_t tr = std::make_shared<tree_node>(read_tree(input));
 
         uint64_t count = 0;
         input >> count;

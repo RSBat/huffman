@@ -6,9 +6,9 @@
 
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <sstream>
 #include <vector>
-#include <algorithm>
 
 std::vector<std::pair<size_t, unsigned char>> calc_count(const std::string& s) {
     std::vector<std::pair<size_t, unsigned char>> ans(256);
@@ -30,7 +30,7 @@ std::string run_encode_decode(const std::string& s) {
     std::istringstream istream(s);
     std::ostringstream oencoded;
 
-    std::shared_ptr<huffman::tree> tree = huffman::build_tree(calc_count(s));
+    std::shared_ptr<huffman::tree_node> tree = huffman::build_tree(calc_count(s));
 
     huffman::write_encoded(tree, s.size(), istream, oencoded);
 
@@ -131,5 +131,49 @@ TEST(decode_corrupted, random_truncated) {
         std::ostringstream decoded;
 
         ASSERT_ANY_THROW(huffman::read_encoded(iencoded, decoded));
+    }
+}
+
+TEST(bitstream, unaligned_char) {
+    std::ostringstream oencoded;
+
+    huffman::obitstream stream(oencoded);
+    stream << true << false << true;
+    stream << static_cast<unsigned char>(139);
+
+    stream.flush();
+
+    std::istringstream istr(oencoded.str());
+    huffman::ibitstream ibst(istr);
+
+    bool b;
+    ibst >> b >> b >> b;
+
+    for (size_t i = 0; i < 8; i++) {
+        ibst >> b;
+        ASSERT_EQ(b, (static_cast<unsigned char>(139) >> (7 - i)) & 1);
+    }
+}
+
+TEST(bitstream, random_bits) {
+    std::ostringstream oencoded;
+
+    huffman::obitstream stream(oencoded);
+    std::vector<bool> vec;
+    for (size_t i = 0; i < 1000; i++) {
+        auto b = static_cast<bool>(rand() & 1);
+        vec.push_back(b);
+        stream << b;
+    }
+
+    stream.flush();
+
+    std::istringstream istr(oencoded.str());
+    huffman::ibitstream ibst(istr);
+
+    for (size_t i = 0; i < 8; i++) {
+        bool b;
+        ibst >> b;
+        ASSERT_EQ(vec[i], b);
     }
 }

@@ -3,14 +3,15 @@
 //
 
 #include <cassert>
+#include <limits>
 #include "bitstream.h"
 
 namespace huffman {
 
     ibitstream& ibitstream::operator>>(bool& val) {
         if (in_buffer == 0) {
-            uint8_t tmp;
-            input.read(reinterpret_cast<char*>(&tmp), 1);
+            char tmp;
+            input.read(&tmp, 1);
             buffer = tmp;
             in_buffer = BUFFER_SIZE;
         }
@@ -81,9 +82,20 @@ namespace huffman {
     }
 
     obitstream& obitstream::operator<<(unsigned char val) {
-        assert(in_buffer == 0); // unaligned write is not supported
+        //assert(in_buffer == 0); // unaligned write is not supported
 
-        output.write(reinterpret_cast<const char*>(&val), 1);
+        if (in_buffer == 0) {
+            output.write(reinterpret_cast<const char*>(&val), 1);
+        } else {
+            unsigned char mask = std::numeric_limits<unsigned char>::max();
+            mask <<= in_buffer;
+            buffer = static_cast<char>(buffer.to_ulong()) | ((val & mask) >> in_buffer);
+
+            auto tmp = static_cast<char>(buffer.to_ulong());
+            output.write(&tmp, 1);
+
+            buffer = val << (CHAR_BIT - in_buffer);
+        }
 
         return *this;
     }
