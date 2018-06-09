@@ -15,8 +15,19 @@ int main(int argc, char* argv[]) {
         decode = true;
     }
 
+    if (argc == 2 && decode) {
+        std::cout << "Usage: huffman [-d] input_file [output_file]" << std::endl;
+        return 0;
+    }
+
     std::ifstream input(argv[1 + decode], std::ios::binary);
-    std::ofstream output(argv[2 + decode], std::ios::binary);
+
+    std::ofstream output;
+    if (argc == 3 + decode) {
+        output = std::ofstream(argv[2 + decode], std::ios::binary);
+    } else {
+        output = std::ofstream("output.hf", std::ios::binary);
+    }
 
     if (decode) {
         huffman::read_encoded(input, output);
