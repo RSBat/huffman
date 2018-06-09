@@ -17,16 +17,16 @@
 
 namespace huffman {
     struct tree_node {
-        std::shared_ptr<tree_node> left;
-        std::shared_ptr<tree_node> right;
+        std::unique_ptr<tree_node> left;
+        std::unique_ptr<tree_node> right;
         unsigned char ch;
 
         tree_node() :left(nullptr), right(nullptr), ch(0) {};
 
         explicit tree_node(unsigned char ch) : left(nullptr), right(nullptr), ch(ch) {};
 
-        tree_node(std::shared_ptr<tree_node>& lhs, std::shared_ptr<tree_node>& rhs, unsigned char ch)
-                : left(lhs), right(rhs), ch(0) {};
+        tree_node(std::unique_ptr<tree_node>& lhs, std::unique_ptr<tree_node>& rhs, unsigned char ch)
+                : left(std::move(lhs)), right(std::move(rhs)), ch(0) {};
     };
 
     struct code_sequence {
@@ -52,21 +52,21 @@ namespace huffman {
     struct corrupted_tree {};
     struct corrupted_data {};
 
-    std::shared_ptr<tree_node> build_tree(const std::vector<std::pair<size_t, unsigned char>>& counts);
+    std::unique_ptr<tree_node> build_tree(const std::vector<std::pair<size_t, unsigned char>>& counts);
 
-    std::unordered_map<unsigned char, code_sequence> tree_to_map(const std::shared_ptr<tree_node>& tree);
+    std::unordered_map<unsigned char, code_sequence> tree_to_map(const std::unique_ptr<tree_node>& tree);
 
-    void write_symbols(std::istream& input, obitstream& output, uint64_t count, const std::shared_ptr<tree_node>& tree);
+    void write_symbols(std::istream& input, obitstream& output, uint64_t count, const std::unique_ptr<tree_node>& tree);
 
-    void write_tree(obitstream& output, const std::shared_ptr<tree_node>& tree);
+    void write_tree(obitstream& output, const std::unique_ptr<tree_node>& tree);
 
-    void write_encoded(const std::shared_ptr<tree_node>&, size_t count, std::istream& input, std::ostream& output);
+    void write_encoded(const std::unique_ptr<tree_node>&, size_t count, std::istream& input, std::ostream& output);
 
-    void write_encoded(const std::shared_ptr<tree_node>&, size_t count, std::istream& input, obitstream& output);
+    void write_encoded(const std::unique_ptr<tree_node>&, size_t count, std::istream& input, obitstream& output);
 
-    tree_node read_tree(ibitstream& input);
+    std::unique_ptr<tree_node> read_tree(ibitstream& input);
 
-    void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const std::shared_ptr<tree_node>& tree);
+    void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const std::unique_ptr<tree_node>& tree);
 
     void read_encoded(std::istream& input, std::ostream& output);
 

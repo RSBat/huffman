@@ -15,18 +15,18 @@
 
 namespace huffman {
 
-    typedef std::shared_ptr<tree_node> tree_ptr_t;
+    typedef std::unique_ptr<tree_node> tree_ptr_t;
     typedef std::unordered_map<unsigned char, code_sequence> alphabet_map;
 
     tree_ptr_t build_tree(const std::vector<std::pair<size_t, unsigned char>> &counts) {
         std::vector<std::pair<size_t, tree_ptr_t>> arr;
         std::transform(counts.begin(), counts.end(), std::back_inserter(arr),
                        [](std::pair<size_t, unsigned char> p) -> std::pair<size_t, tree_ptr_t> {
-                           return {p.first, std::make_shared<tree_node>(p.second)};
+                           return {p.first, std::make_unique<tree_node>(p.second)};
                        });
 
         while (arr.size() < 2) {
-            arr.emplace_back(0, std::make_shared<tree_node>());
+            arr.emplace_back(0, std::make_unique<tree_node>());
         }
 
         std::sort(arr.begin(), arr.end());
@@ -40,38 +40,38 @@ namespace huffman {
             std::pair<size_t, tree_ptr_t> rhs;
 
             if (i == arr.size()) {
-                lhs = aux[j];
+                lhs = std::move(aux[j]);
                 j++;
             } else if (j == aux.size()) {
-                lhs = arr[i];
+                lhs = std::move(arr[i]);
                 i++;
             } else if (arr[i].first < aux[j].first) {
-                lhs = arr[i];
+                lhs = std::move(arr[i]);
                 i++;
             } else {
-                lhs = aux[j];
+                lhs = std::move(aux[j]);
                 j++;
             }
 
             if (i == arr.size()) {
-                rhs = aux[j];
+                rhs = std::move(aux[j]);
                 j++;
             } else if (j == aux.size()) {
-                rhs = arr[i];
+                rhs = std::move(arr[i]);
                 i++;
             } else if (arr[i].first < aux[j].first) {
-                rhs = arr[i];
+                rhs = std::move(arr[i]);
                 i++;
             } else {
-                rhs = aux[j];
+                rhs = std::move(aux[j]);
                 j++;
             }
 
 
-            aux.emplace_back(lhs.first + rhs.first, std::make_shared<tree_node>(lhs.second, rhs.second, 0));
+            aux.emplace_back(lhs.first + rhs.first, std::make_unique<tree_node>(lhs.second, rhs.second, 0));
         }
 
-        return aux.back().second;
+        return std::move(aux.back().second);
     }
 
     void tree_to_map_dfs(const tree_ptr_t& v, alphabet_map& mp, std::vector<bool>& cur) {
@@ -167,7 +167,7 @@ namespace huffman {
         write_encoded(tree, count, input, stream);
     }
 
-    tree_node read_tree(ibitstream& input) {
+    tree_ptr_t read_tree(ibitstream& input) {
         uint32_t sz;
 
         input >> sz;
@@ -182,29 +182,29 @@ namespace huffman {
         }
 
         std::stack<tree_ptr_t> stack;
-        stack.push(std::make_shared<tree_node>());
+        stack.push(std::make_unique<tree_node>());
         size_t ptr = 0;
 
         size_t i = (4 * sz - 3 + 7) / 8 * 8;
         bool bit;
         while (i != 0 && input >> bit) {
             if (bit) {
-                stack.push(std::make_shared<tree_node>());
+                stack.push(std::make_unique<tree_node>());
             } else {
                 if (stack.top()->left == nullptr) {
                     stack.top()->ch = alphabet[ptr];
                     ptr++;
                 }
-                tree_ptr_t tmp = stack.top();
+                tree_ptr_t tmp = std::move(stack.top());
                 stack.pop();
 
                 if (stack.empty()) {
-                    stack.push(tmp);
+                    stack.push(std::move(tmp));
                 } else {
                     if (stack.top()->left == nullptr) {
-                        stack.top()->left = tmp;
+                        stack.top()->left = std::move(tmp);
                     } else {
-                        stack.top()->right = tmp;
+                        stack.top()->right = std::move(tmp);
                     }
                 }
             }
@@ -216,24 +216,24 @@ namespace huffman {
             throw corrupted_tree();
         }
 
-        return *stack.top();
+        return std::move(stack.top());
     }
 
     void read_symbols(ibitstream& input, std::ostream& output, uint64_t count, const tree_ptr_t& tree) {
-        std::weak_ptr<tree_node> node = tree;
+        tree_node* node = tree.get();
 
         bool bit;
         while (count != 0) {
             input >> bit;
             if (bit) {
-                node = node.lock()->right;
+                node = node->right.get();
             } else {
-                node = node.lock()->left;
+                node = node->left.get();
             }
 
-            if (node.lock()->left == nullptr) {
-                output << node.lock()->ch;
-                node = tree;
+            if (node->left == nullptr) {
+                output << node->ch;
+                node = tree.get();
                 count--;
             }
         }
@@ -244,7 +244,7 @@ namespace huffman {
     }
 
     void read_encoded(ibitstream& input, std::ostream& output) {
-        tree_ptr_t tr = std::make_shared<tree_node>(read_tree(input));
+        tree_ptr_t tr = read_tree(input);
 
         uint64_t count = 0;
         input >> count;

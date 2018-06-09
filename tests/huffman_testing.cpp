@@ -30,7 +30,7 @@ std::string run_encode_decode(const std::string& s) {
     std::istringstream istream(s);
     std::ostringstream oencoded;
 
-    std::shared_ptr<huffman::tree_node> tree = huffman::build_tree(calc_count(s));
+    std::unique_ptr<huffman::tree_node> tree = huffman::build_tree(calc_count(s));
 
     huffman::write_encoded(tree, s.size(), istream, oencoded);
 

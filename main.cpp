@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
             if (counts[ch] != 0) { chars.emplace_back(counts[ch], ch); }
         } while (++ch != 0);
 
-        std::shared_ptr<huffman::tree_node> tree = huffman::build_tree(chars);
+        std::unique_ptr<huffman::tree_node> tree = huffman::build_tree(chars);
 
         input.clear();
         input.seekg(0);
