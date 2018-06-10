@@ -10,7 +10,7 @@
 #include <sstream>
 #include <vector>
 
-std::vector<std::pair<size_t, unsigned char>> calc_count(const std::string& s) {
+std::vector<std::pair<size_t, unsigned char>> calc_count(const std::string &s) {
     std::vector<std::pair<size_t, unsigned char>> ans(256);
     for (size_t i = 0; i < 256; i++) {
         ans[i] = {0, static_cast<unsigned char>(i)};
@@ -26,7 +26,7 @@ std::vector<std::pair<size_t, unsigned char>> calc_count(const std::string& s) {
     return ans;
 }
 
-std::string run_encode_decode(const std::string& s) {
+std::string run_encode_decode(const std::string &s) {
     std::istringstream istream(s);
     std::ostringstream oencoded;
 
