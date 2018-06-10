@@ -9,6 +9,10 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined -D_GLIBCXX_DEBUG")
 endif()
 
+add_library(huffman_lib STATIC
+        library/huffman.cpp library/huffman.h
+        library/bitstream.cpp library/bitstream.h)
+
 add_executable(huffman main.cpp library/huffman.cpp library/huffman.h library/bitstream.cpp library/bitstream.h)
 
 add_executable(huffman_testing
