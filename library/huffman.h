@@ -49,8 +49,8 @@ namespace huffman {
         }
     };
 
-    struct corrupted_tree {};
-    struct corrupted_data {};
+    struct corrupted_tree : std::exception {};
+    struct corrupted_data : std::exception {};
 
     std::unique_ptr<tree_node> build_tree(const std::vector<std::pair<size_t, unsigned char>>& counts);
 

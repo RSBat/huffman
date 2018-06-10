@@ -8,6 +8,7 @@
 #include <bitset>
 #include <istream>
 #include <climits>
+#include <limits>
 
 namespace huffman {
 
@@ -16,7 +17,7 @@ namespace huffman {
         bitstream_base() : buffer(0), in_buffer(0) {};
 
     protected:
-        static const size_t BUFFER_SIZE = 8;
+        static const size_t BUFFER_SIZE = std::numeric_limits<unsigned char>::digits;
 
         std::bitset<BUFFER_SIZE> buffer;
         size_t in_buffer;
@@ -45,8 +46,6 @@ namespace huffman {
         void flush();
 
     private:
-        static const size_t BUFFER_SIZE = CHAR_BIT;
-
         std::ostream& output;
     };
 }

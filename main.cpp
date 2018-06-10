@@ -10,10 +10,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    bool decode = false;
-    if (std::string(argv[1]) == "-d") {
-        decode = true;
-    }
+    bool decode = std::string(argv[1]) == "-d";
 
     if (argc == 2 && decode) {
         std::cout << "Usage: huffman [-d] input_file [output_file]" << std::endl;
@@ -41,10 +38,10 @@ int main(int argc, char* argv[]) {
         }
 
         std::vector<std::pair<size_t, unsigned char>> chars;
-        ch = 0;
-        do {
-            if (counts[ch] != 0) { chars.emplace_back(counts[ch], ch); }
-        } while (++ch != 0);
+
+        for (uint16_t c = 0; c < 256; ++c) {
+            if (counts[c] != 0) { chars.emplace_back(counts[c], c); }
+        }
 
         std::unique_ptr<huffman::tree_node> tree = huffman::build_tree(chars);
 
